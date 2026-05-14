@@ -286,6 +286,11 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 .rebuy-header { font-size: 1.2rem; font-weight: 900; color: var(--neg); margin-bottom: 8px; }
 .rebuy-hint   { font-size: 0.9rem; color: var(--muted); margin-bottom: 16px; }
 
+/* ─── MODE TOGGLE ─── */
+.mode-toggle { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid #1e3d1a; margin-top: 2px; }
+.mode-toggle button { flex: 1; border-radius: 0; margin: 0; background: var(--surface); color: var(--muted); border: none; font-size: 0.88rem; padding: 11px 8px; min-height: 42px; font-weight: 600; transition: background 0.15s, color 0.15s; width: auto; }
+.mode-toggle button.active { background: var(--accent); color: #fff; }
+
 /* ─── LANDSCAPE TABLET (≤600px tall) ─── */
 @media (orientation: landscape) and (max-height: 600px) {
   .screen { padding: 6px; overflow-y: auto; }
@@ -361,6 +366,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   .gwg-logo { display: none; }
   .title-wrap { margin-bottom: 2px; }
   .subtitle { display: none; }
+  .mode-toggle button { padding: 7px 6px; min-height: 32px; font-size: 0.76rem; }
 
   /* Setup */
   #screen-setup .card { max-width: none; }
@@ -490,6 +496,14 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
       </select>
     </div>
 
+    <div class="field-group">
+      <label>Spielmodus</label>
+      <div class="mode-toggle" id="mode-toggle">
+        <button type="button" class="active" data-mode="odds">Mit Quoten ⭐</button>
+        <button type="button" data-mode="no-odds">Ohne Quoten 🎲</button>
+      </div>
+    </div>
+
     <button class="btn-primary" id="start-game-btn">RENNEN STARTEN</button>
   </div>
 </div>
@@ -612,6 +626,7 @@ const state = {
   totalRounds: 6,
   currentRound: 0,
   dogs: [],          // DOG_COLORS slice
+  useOdds: true,
   bets: [],          // [{playerIndex, dogId, wager}]
   finishOrder: [],   // dogId sorted by finish time
   raceDogs: [],      // physics objects
@@ -698,6 +713,7 @@ function startGame() {
 
   state.players = names.map(n => ({ name: n, chips: state.startingChips }));
 
+  state.useOdds = document.querySelector('#mode-toggle button.active').dataset.mode === 'odds';
   state.dogs = DOG_COLORS.slice(0, state.numDogs).map(d => ({ ...d }));
   state.currentRound = 0;
 
@@ -719,10 +735,16 @@ let isRebuyMode = false;
 
 function assignStrengthsForRound() {
   state.dogs.forEach(dog => {
-    const s = Math.ceil(Math.random() * 3);
-    dog.strength  = s;
-    dog.odds      = ODDS_MAP[s];
-    dog.oddsLabel = LABEL_MAP[s];
+    if (!state.useOdds) {
+      dog.strength  = 2;
+      dog.odds      = 2.0;
+      dog.oddsLabel = '';
+    } else {
+      const s = Math.ceil(Math.random() * 3);
+      dog.strength  = s;
+      dog.odds      = ODDS_MAP[s];
+      dog.oddsLabel = LABEL_MAP[s];
+    }
   });
 }
 
@@ -815,7 +837,7 @@ function renderBettingUI(playerIdx) {
       <span class="dog-swatch" style="background:${dog.body}"></span>
       <span class="dog-btn-info">
         <span class="dog-btn-name">${dog.name}</span>
-        <span class="dog-btn-odds">${dog.oddsLabel || ''} &nbsp; Quote: <strong>${dog.odds}x</strong></span>
+        ${state.useOdds ? `<span class="dog-btn-odds">${dog.oddsLabel || ''} &nbsp; Quote: <strong>${dog.odds}x</strong></span>` : ''}
       </span>`;
     btn.addEventListener('click', () => selectDog(dog.name, btn));
     sel.appendChild(btn);
@@ -1264,7 +1286,7 @@ function initRacing() {
     const player = state.players[bet.playerIndex];
     const pill = document.createElement('div');
     pill.className = 'bet-pill';
-    pill.innerHTML = `<span class="swatch" style="background:${dog.body}"></span><strong>${player.name}</strong>&nbsp;→ ${dog.name} <span style="color:var(--gold)">${dog.odds}x</span> (${bet.wager} Chips)`;
+    pill.innerHTML = `<span class="swatch" style="background:${dog.body}"></span><strong>${player.name}</strong>&nbsp;→ ${dog.name}${state.useOdds ? ` <span style="color:var(--gold)">${dog.odds}x</span>` : ''} (${bet.wager} Chips)`;
     ticker.appendChild(pill);
   });
 
@@ -1483,6 +1505,13 @@ document.getElementById('play-again-btn').addEventListener('click', () => {
 
 document.querySelectorAll('.wager-adj').forEach(btn => {
   btn.addEventListener('click', () => adjustWager(parseInt(btn.dataset.delta)));
+});
+
+document.querySelectorAll('#mode-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#mode-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
 });
 
 window.addEventListener('resize', () => {
