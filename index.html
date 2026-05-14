@@ -466,8 +466,8 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
           <path class="gl-a" d="M233.32,32.36v47.5l-5.24-1.41v-18.93l-9.87-1.56.1,18.13-5.19-1.13-.29-43.45,5.22.18.11,17.52,9.91,1.21v-18.24l5.24.18Z"/>
         </g>
       </svg>
-      <h1>Frenchie <span>Races</span></h1>
-      <p class="subtitle">Das Bulldoggen-Trinkrennen</p>
+      <h1>Rentner <span>Rennen</span></h1>
+      <p class="subtitle">Das Rentnerinnen-Trinkrennen</p>
     </div>
 
     <div class="players-header">
@@ -488,11 +488,11 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
     </div>
 
     <div class="field-group">
-      <label>Anzahl Bulldoggen</label>
+      <label>Anzahl Rentnerinnen</label>
       <select id="num-dogs">
-        <option value="4">4 Bulldoggen</option>
-        <option value="5" selected>5 Bulldoggen</option>
-        <option value="6">6 Bulldoggen</option>
+        <option value="4">4 Rentnerinnen</option>
+        <option value="5" selected>5 Rentnerinnen</option>
+        <option value="6">6 Rentnerinnen</option>
       </select>
     </div>
 
@@ -526,7 +526,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
       <div class="chip-badge">🟡 <span id="betting-chips"></span> Chips</div>
     </div>
 
-    <div class="section-label">Wähle eine Bulldogge</div>
+    <div class="section-label">Wähle eine Rentnerin</div>
     <div id="dog-selector"></div>
 
     <div class="wager-section">
@@ -583,13 +583,13 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 const PHASES = { SETUP:'setup', BETTING:'betting', RACING:'racing', RESULTS:'results', LEADERBOARD:'leaderboard' };
 
-const DOG_COLORS = [
-  { name: 'Gertrud',  body: '#F4A460', snout: '#D2691E', ear: '#C4834E', tongue: '#ff6b8a' },
-  { name: 'Nadja',    body: '#8090A0', snout: '#6a7a88', ear: '#5a6a78', tongue: '#ff6b8a' },
-  { name: 'Al Hex',   body: '#5C3317', snout: '#7a4a2a', ear: '#4a2808', tongue: '#ff8a9a' },
-  { name: 'Mila',     body: '#D8D8D8', snout: '#B0B0B0', ear: '#A0A0A0', tongue: '#ff6b8a' },
-  { name: 'Svetlana', body: '#7B68EE', snout: '#9480f0', ear: '#6050cc', tongue: '#ff9ab0' },
-  { name: 'Klara',    body: '#CD853F', snout: '#A0622a', ear: '#8B5A2B', tongue: '#ff6b8a' },
+const RENTNER_TYPES = [
+  { name: 'Waltraud', type: 'rollator', coat: '#c080b8', bottom: '#787088', skin: '#f5d0a8', hair: '#e8e8e8', accent: '#a060a0' },
+  { name: 'Sigrid',   type: 'sport',    coat: '#3888d0', bottom: '#3060b0', skin: '#e8b070', hair: '#c8c8c8', accent: '#f0c000' },
+  { name: 'Gerda',    type: 'stock',    coat: '#8a5e38', bottom: '#503820', skin: '#f5d0a8', hair: '#f0f0f0', accent: '#704020' },
+  { name: 'Elfriede', type: 'einkauf',  coat: '#4a9850', bottom: '#346836', skin: '#d48a5a', hair: '#e4e4e4', accent: '#80c878' },
+  { name: 'Helga',    type: 'tasche',   coat: '#4a68c0', bottom: '#303e80', skin: '#f5d0a8', hair: '#f8f8f8', accent: '#b88020' },
+  { name: 'Käthe',    type: 'kaffee',   coat: '#e06090', bottom: '#b04070', skin: '#f0c898', hair: '#ececec', accent: '#c09060' },
 ];
 
 const FEMALE_NAMES = [
@@ -734,7 +734,7 @@ function startGame() {
   state.players = names.map(n => ({ name: n, chips: state.startingChips }));
 
   state.useOdds = document.querySelector('#mode-toggle button.active').dataset.mode === 'odds';
-  state.dogs = DOG_COLORS.slice(0, state.numDogs).map(d => ({ ...d }));
+  state.dogs = RENTNER_TYPES.slice(0, state.numDogs).map(d => ({ ...d }));
   state.currentRound = 0;
 
   transition(PHASES.BETTING);
@@ -857,7 +857,7 @@ function renderBettingUI(playerIdx) {
     btn.className = 'dog-btn';
     btn.dataset.dogId = dog.name;
     btn.innerHTML = `
-      <span class="dog-swatch" style="background:${dog.body}"></span>
+      <span class="dog-swatch" style="background:${dog.coat}"></span>
       <span class="dog-btn-info">
         <span class="dog-btn-name">${dog.name}</span>
         ${state.useOdds ? `<span class="dog-btn-odds">${dog.oddsLabel || ''} &nbsp; Quote: <strong>${dog.odds}x</strong></span>` : ''}
@@ -894,7 +894,7 @@ function adjustWager(delta) {
 
 function confirmBet() {
   if (isRebuyMode) { confirmRebuy(); return; }
-  if (!selectedDogId) { alert('Wähle erst eine Bulldogge!'); return; }
+  if (!selectedDogId) { alert('Wähle erst eine Rentnerin!'); return; }
   state.bets.push({ playerIndex: bettingOrder[bettingPlayerIndex], dogName: selectedDogId, wager: currentWager });
   bettingPlayerIndex++;
   if (bettingPlayerIndex >= state.players.length) {
@@ -937,136 +937,181 @@ function setupCanvas() {
   return { w: cssW, h: cssH };
 }
 
-// ── Draw Bulldog ──
-function drawBulldog(cx, cy, color, legFrame, scale) {
-  scale = scale || 1;
+// ── Draw Rentnerin ──
+function drawRentnerin(cx, cy, char, legFrame) {
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.scale(scale, scale);
-  ctx.scale(-1, 1);  // flip horizontally — dog faces right
 
-  const legs = getLegOffsets(legFrame);
-  const bob = Math.sin(legFrame * Math.PI / 2) * 2;
+  const bob    = Math.sin(legFrame * Math.PI / 2) * 1.5;
+  const type   = char.type;
+  const stride = type === 'sport' ? 8 : type === 'kaffee' ? 2 : 5;
+  const lExt   = legFrame % 2 === 0 ?  stride : -stride;
+  const rExt   = legFrame % 2 === 0 ? -stride :  stride;
+  const aSwL   = legFrame % 2 === 0 ? -5 : 5;
+  const aSwR   = legFrame % 2 === 0 ?  5 : -5;
 
-  // Body — wider, flatter (French Bulldog build)
-  ctx.fillStyle = color.body;
-  roundRect(ctx, -34, -13 + bob, 68, 26, 10);
-  ctx.fill();
-
-  // Body shoulder crease
-  ctx.strokeStyle = shadeColor(color.body, -18);
-  ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-8, -13+bob); ctx.lineTo(-8, 13+bob); ctx.stroke();
-
-  // Tail (curled nub at back = right in code = left on screen after flip)
-  ctx.strokeStyle = shadeColor(color.body, -10);
-  ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.arc(30, -4+bob, 7, 0.2, 1.8, false);
-  ctx.stroke();
-
-  // Back legs (drawn first — behind body in z-order)
-  drawLeg(ctx, 18, 13+bob, legs.rl, color.body, 15);
-  drawLeg(ctx, 26, 13+bob, legs.rr, color.body, 15);
-
-  // Head — large round Frenchie head
-  ctx.fillStyle = color.body;
-  ctx.beginPath();
-  ctx.arc(-20, -18+bob, 22, 0, Math.PI*2);
-  ctx.fill();
-
-  // Bat ears — upright triangular ears (French Bulldog signature)
-  // Back ear (slightly darker, drawn behind)
-  ctx.fillStyle = shadeColor(color.ear, -25);
-  ctx.beginPath();
-  ctx.moveTo(-32, -28+bob);
-  ctx.lineTo(-42, -58+bob);
-  ctx.lineTo(-14, -38+bob);
-  ctx.quadraticCurveTo(-22, -46+bob, -32, -28+bob);
-  ctx.fill();
-  // Inner ear canal (back)
-  ctx.fillStyle = shadeColor(color.ear, -40);
-  ctx.beginPath();
-  ctx.moveTo(-30, -32+bob);
-  ctx.lineTo(-38, -54+bob);
-  ctx.lineTo(-18, -40+bob);
-  ctx.closePath(); ctx.fill();
-
-  // Front ear (dominant)
-  ctx.fillStyle = color.ear;
-  ctx.beginPath();
-  ctx.moveTo(-22, -30+bob);
-  ctx.lineTo(-10, -60+bob);
-  ctx.lineTo(-2,  -36+bob);
-  ctx.quadraticCurveTo(-10, -48+bob, -22, -30+bob);
-  ctx.fill();
-  // Inner ear canal (front)
-  ctx.fillStyle = shadeColor(color.ear, -30);
-  ctx.beginPath();
-  ctx.moveTo(-19, -33+bob);
-  ctx.lineTo(-11, -55+bob);
-  ctx.lineTo(-5,  -37+bob);
-  ctx.closePath(); ctx.fill();
-
-  // Snout — very flat, broad brachycephalic muzzle
-  ctx.fillStyle = color.snout;
-  roundRect(ctx, -38, -15+bob, 22, 11, 5);
-  ctx.fill();
-
-  // Chin / jowls
-  ctx.fillStyle = color.snout;
-  ctx.beginPath(); ctx.arc(-35, -6+bob, 7, 0, Math.PI); ctx.fill();
-  ctx.beginPath(); ctx.arc(-20, -6+bob, 6, 0, Math.PI); ctx.fill();
-
-  // Nostrils
-  ctx.fillStyle = shadeColor(color.snout, -35);
-  ctx.beginPath(); ctx.ellipse(-33, -11+bob, 3, 2.5, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(-23, -11+bob, 3, 2.5, 0, 0, Math.PI*2); ctx.fill();
-  // nose bridge
-  ctx.strokeStyle = shadeColor(color.snout, -45);
-  ctx.lineWidth = 1; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-28, -11+bob); ctx.lineTo(-28, -14+bob); ctx.stroke();
-
-  // Tongue (frames 0 and 2)
-  if (legFrame === 0 || legFrame === 2) {
-    ctx.fillStyle = color.tongue;
+  // ── Skirt / Pants ──
+  if (type === 'sport') {
+    ctx.fillStyle = char.bottom;
+    roundRect(ctx, -11, 4 + bob, 22, 15, 4); ctx.fill();
+  } else {
+    ctx.fillStyle = char.bottom;
     ctx.beginPath();
-    ctx.ellipse(-27, -2+bob, 5, 7, 0.05, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = shadeColor(color.tongue, -20);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(-27, 0+bob); ctx.lineTo(-27, 4+bob); ctx.stroke();
+    ctx.moveTo(-11, 4 + bob); ctx.lineTo(-16, 18 + bob);
+    ctx.lineTo(16, 18 + bob); ctx.lineTo(11, 4 + bob);
+    ctx.closePath(); ctx.fill();
   }
 
-  // Eyes — large, round, wide-set (Frenchie trait)
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(-27, -22+bob, 6.5, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(-13, -22+bob, 6.5, 0, Math.PI*2); ctx.fill();
-  // iris
-  ctx.fillStyle = '#3a2200';
-  ctx.beginPath(); ctx.arc(-26, -22+bob, 4, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(-12, -22+bob, 4, 0, Math.PI*2); ctx.fill();
-  // pupil
-  ctx.fillStyle = '#111';
-  ctx.beginPath(); ctx.arc(-26, -22+bob, 2.2, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(-12, -22+bob, 2.2, 0, Math.PI*2); ctx.fill();
-  // glint
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.beginPath(); ctx.arc(-24.5, -23.5+bob, 1.4, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(-10.5, -23.5+bob, 1.4, 0, Math.PI*2); ctx.fill();
+  // ── Legs ──
+  const legCol = type === 'sport' ? shadeColor(char.bottom, -15) : '#c8c0b4';
+  ctx.fillStyle = legCol;
+  roundRect(ctx, -11, 17 + bob, 8, 18 + lExt, 3); ctx.fill();
+  roundRect(ctx,   3, 17 + bob, 8, 18 + rExt, 3); ctx.fill();
 
-  // Forehead wrinkles (3 lines + nose fold)
-  ctx.strokeStyle = shadeColor(color.body, -28);
-  ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-28, -36+bob); ctx.quadraticCurveTo(-20, -39+bob, -12, -36+bob); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-26, -33+bob); ctx.quadraticCurveTo(-19, -35+bob, -13, -33+bob); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-25, -30+bob); ctx.quadraticCurveTo(-19, -31.5+bob, -13, -30+bob); ctx.stroke();
-  // nose fold between eyes
-  ctx.beginPath(); ctx.moveTo(-22, -18+bob); ctx.quadraticCurveTo(-20, -22+bob, -18, -18+bob); ctx.stroke();
+  // ── Shoes ──
+  ctx.fillStyle = type === 'kaffee' ? '#c0906a' : '#202020';
+  ctx.beginPath(); ctx.ellipse(-7, 35 + bob + lExt, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 7, 35 + bob + rExt, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
 
-  // Front legs (over body)
-  drawLeg(ctx, -14, 13+bob, legs.fl, color.body, 15);
-  drawLeg(ctx, -6, 13+bob, legs.fr, color.body, 15);
+  // ── Torso ──
+  ctx.fillStyle = char.coat;
+  roundRect(ctx, -12, -15 + bob, 24, 20, 5); ctx.fill();
+  ctx.fillStyle = shadeColor(char.coat, 20);
+  ctx.beginPath();
+  ctx.moveTo(-4, -15 + bob); ctx.lineTo(0, -9 + bob); ctx.lineTo(4, -15 + bob);
+  ctx.closePath(); ctx.fill();
+
+  // ── Arms ──
+  ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.strokeStyle = char.coat;
+  if (type === 'rollator') {
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-2, 5 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(22, 1 + bob); ctx.stroke();
+  } else if (type === 'einkauf') {
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-21, 8 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(21, 8 + bob); ctx.stroke();
+  } else if (type === 'stock') {
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-18 + aSwL, 5 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(20, 4 + bob); ctx.stroke();
+  } else if (type === 'tasche') {
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-20, 0 + bob); ctx.lineTo(-17, 10 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(18 + aSwR, 5 + bob); ctx.stroke();
+  } else if (type === 'kaffee') {
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-17 + aSwL * 0.4, 4 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(19, -1 + bob); ctx.stroke();
+  } else { // sport
+    ctx.beginPath(); ctx.moveTo(-12, -9 + bob); ctx.lineTo(-21 + aSwL * 1.5, 4 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -9 + bob);  ctx.lineTo(21 + aSwR * 1.5, 4 + bob); ctx.stroke();
+  }
+
+  // ── Head ──
+  ctx.fillStyle = char.skin;
+  ctx.beginPath(); ctx.arc(0, -28 + bob, 13, 0, Math.PI * 2); ctx.fill();
+
+  // ── Hair ──
+  ctx.fillStyle = char.hair;
+  if (type === 'sport') {
+    ctx.beginPath(); ctx.arc(-8, -35 + bob, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 8, -35 + bob, 7, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc( 0, -40 + bob, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-8, -36 + bob,  7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 8, -36 + bob,  7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ── Face ──
+  ctx.fillStyle = '#1a1010';
+  ctx.beginPath(); ctx.arc(-5, -29 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 5, -29 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath(); ctx.arc(-4, -30 + bob, 1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 6, -30 + bob, 1, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#7a3020'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(0, -24 + bob, 5, 0.15, Math.PI - 0.15); ctx.stroke();
+  ctx.strokeStyle = shadeColor(char.skin, -18); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-10, -28 + bob); ctx.lineTo(-8, -24 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo( 10, -28 + bob); ctx.lineTo( 8, -24 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-5, -37 + bob); ctx.lineTo(5, -37 + bob); ctx.stroke();
+
+  // ── Accessories ──
+  switch (type) {
+    case 'rollator': {
+      ctx.strokeStyle = '#a8a8a8'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-2, 5 + bob); ctx.lineTo(24, 0 + bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-2, 5 + bob); ctx.lineTo(-5, 36 + bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(24, 0 + bob); ctx.lineTo(27, 36 + bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-4, 20 + bob); ctx.lineTo(25, 16 + bob); ctx.stroke();
+      ctx.fillStyle = '#909090';
+      ctx.beginPath(); ctx.arc(-5, 36 + bob, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(27, 36 + bob, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c0c0c0';
+      ctx.beginPath(); ctx.arc(-5, 36 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(27, 36 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'sport': {
+      ctx.fillStyle = char.accent;
+      ctx.beginPath(); ctx.arc(0, -36 + bob, 12, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = shadeColor(char.accent, -20);
+      ctx.beginPath();
+      ctx.moveTo(-12, -36 + bob); ctx.lineTo(-16, -30 + bob);
+      ctx.lineTo(16, -30 + bob);  ctx.lineTo(12, -36 + bob);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.beginPath();
+      ctx.arc(0, -36 + bob, 12, Math.PI, 0);
+      ctx.arc(0, -36 + bob,  7, 0, Math.PI, true);
+      ctx.closePath(); ctx.fill();
+      break;
+    }
+    case 'stock': {
+      ctx.strokeStyle = char.accent; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(20, -3 + bob); ctx.lineTo(26, -3 + bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(26, -3 + bob); ctx.lineTo(31, 38 + bob); ctx.stroke();
+      break;
+    }
+    case 'einkauf': {
+      ctx.fillStyle = '#e8c020';
+      roundRect(ctx, -31, 6 + bob, 14, 20, 3); ctx.fill();
+      ctx.fillStyle = '#b09010'; ctx.fillRect(-29, 4 + bob, 10, 4);
+      ctx.strokeStyle = '#907808'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(-24, 8 + bob, 5, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = '#d83030';
+      roundRect(ctx, 17, 6 + bob, 14, 20, 3); ctx.fill();
+      ctx.fillStyle = '#a01818'; ctx.fillRect(19, 4 + bob, 10, 4);
+      ctx.strokeStyle = '#801010'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(24, 8 + bob, 5, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      roundRect(ctx, -29, 13 + bob, 10, 5, 1); ctx.fill();
+      roundRect(ctx,  19, 13 + bob, 10, 5, 1); ctx.fill();
+      break;
+    }
+    case 'tasche': {
+      ctx.fillStyle = char.accent;
+      roundRect(ctx, -32, 4 + bob, 18, 14, 4); ctx.fill();
+      ctx.fillStyle = shadeColor(char.accent, -22); ctx.fillRect(-30, 2 + bob, 14, 4);
+      ctx.fillStyle = '#d4a820';
+      ctx.beginPath(); ctx.arc(-23, 11 + bob, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f8f4e8';
+      for (let p = -7; p <= 7; p += 3.5) {
+        ctx.beginPath(); ctx.arc(p, -14 + bob, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      break;
+    }
+    case 'kaffee': {
+      ctx.fillStyle = '#f8f8f0';
+      roundRect(ctx, 16, -6 + bob, 13, 16, 3); ctx.fill();
+      ctx.fillStyle = '#5a3018';
+      roundRect(ctx, 17, -4 + bob, 11, 8, 2); ctx.fill();
+      ctx.strokeStyle = '#d8d0b0'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(29, 3 + bob, 5, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
+      ctx.fillStyle = '#e8e4d0';
+      ctx.beginPath(); ctx.ellipse(22, 10 + bob, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(180,180,180,0.55)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(21, -7 + bob); ctx.quadraticCurveTo(18, -13 + bob, 21, -18 + bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(26, -7 + bob); ctx.quadraticCurveTo(29, -13 + bob, 26, -18 + bob); ctx.stroke();
+      break;
+    }
+  }
 
   ctx.restore();
 }
@@ -1363,7 +1408,7 @@ function raceLoop() {
     if (sx > -80 && sx < cssW + 80) {
       const laneY = HEADER_H + i * LANE_H + LANE_H / 2 + 8;
       const wobble = Math.sin(state.frameCount * 0.15 + dog.wobblePhase) * 3;
-      drawBulldog(sx, laneY + wobble, state.dogs[i], dog.finished ? 1 : state.legFrame);
+      drawRentnerin(sx, laneY + wobble, state.dogs[i], dog.finished ? 1 : state.legFrame);
     }
   });
 
