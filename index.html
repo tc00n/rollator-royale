@@ -238,8 +238,22 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 .progress-dot.active { background: var(--accent); }
 
 /* ─── RACE SCREEN ─── */
-#screen-racing { padding: 8px; }
+#screen-racing { padding: 8px; position: relative; }
 .race-header { width: 100%; max-width: 820px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px 8px; }
+
+.race-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 5;
+}
+.race-overlay.hidden { display: none; }
+.race-overlay-hint { font-size: 1.1rem; color: var(--muted); font-weight: 600; text-align: center; }
+.race-start-btn { width: auto !important; padding: 18px 48px !important; font-size: 1.3rem !important; }
 .race-title { font-size: 1.2rem; font-weight: 700; }
 
 #race-canvas { width: 100%; max-width: 820px; border-radius: 12px; display: block; }
@@ -714,6 +728,10 @@ input:focus-visible, select:focus-visible {
   <canvas id="race-canvas"></canvas>
   <div class="event-log" id="event-log"></div>
   <div class="bet-ticker" id="bet-ticker"></div>
+  <div class="race-overlay hidden" id="race-overlay">
+    <p class="race-overlay-hint">Alle Wetten sind gesetzt!</p>
+    <button class="btn-primary race-start-btn" id="race-start-btn">🏁 Rennen starten</button>
+  </div>
 </div>
 
 <!-- ═══════════════ RESULTS SCREEN ═══════════════ -->
@@ -772,20 +790,20 @@ const FORM_HINTS = {
 
 const RACE_EVENTS = {
   positive: [
-    { text: '🏃 {name} sieht einen freien Sitzplatz und sprintet!', boost: 1.6, duration: 60 },
-    { text: '💨 {name} bekommt Rückenwind vom Seniorentreff!',       boost: 1.4, duration: 80 },
-    { text: '😤 {name} aktiviert Rentner-Wut!',                      boost: 1.8, duration: 45 },
-    { text: '👟 {name} findet Rhythmus dank neuer Einlagen!',         boost: 1.35,duration: 90 },
-    { text: '☕ {name} riecht Kaffee am Ziel und beschleunigt!',      boost: 1.5, duration: 70 },
-    { text: '🦮 {name} sieht ihren Dackel und startet durch!',        boost: 1.7, duration: 50 },
+    { text: '🏃 {name} sieht einen freien Sitzplatz und sprintet!', boost: 1.6, duration: 150 },
+    { text: '💨 {name} bekommt Rückenwind vom Seniorentreff!',       boost: 1.4, duration: 160 },
+    { text: '😤 {name} aktiviert Rentner-Wut!',                      boost: 1.8, duration: 120 },
+    { text: '👟 {name} findet Rhythmus dank neuer Einlagen!',         boost: 1.35,duration: 170 },
+    { text: '☕ {name} riecht Kaffee am Ziel und beschleunigt!',      boost: 1.5, duration: 140 },
+    { text: '🦮 {name} sieht ihren Dackel und startet durch!',        boost: 1.7, duration: 130 },
   ],
   negative: [
-    { text: '😬 {name} verliert kurz ihr Gebiss!',                   boost: 0.5, duration: 50 },
-    { text: '🥧 {name} bleibt am Kuchenbuffet hängen!',              boost: 0.4, duration: 60 },
-    { text: '🗣️ {name} diskutiert mit dem Schiedsrichter!',           boost: 0.55,duration: 55 },
-    { text: '🐕 {name} muss kurz ihren Dackel beruhigen!',            boost: 0.45,duration: 65 },
-    { text: '💊 {name} verwechselt die Strecke mit dem Apothekenweg!',boost: 0.5, duration: 70 },
-    { text: '📞 {name} bekommt einen Anruf von der Krankenkasse!',    boost: 0.6, duration: 45 },
+    { text: '😬 {name} verliert kurz ihr Gebiss!',                   boost: 0.5, duration: 130 },
+    { text: '🥧 {name} bleibt am Kuchenbuffet hängen!',              boost: 0.4, duration: 140 },
+    { text: '🗣️ {name} diskutiert mit dem Schiedsrichter!',           boost: 0.55,duration: 120 },
+    { text: '🐕 {name} muss kurz ihren Dackel beruhigen!',            boost: 0.45,duration: 150 },
+    { text: '💊 {name} verwechselt die Strecke mit dem Apothekenweg!',boost: 0.5, duration: 145 },
+    { text: '📞 {name} bekommt einen Anruf von der Krankenkasse!',    boost: 0.6, duration: 110 },
   ],
 };
 
@@ -812,6 +830,10 @@ const state = {
   raceFinished: false,
   activeEvents: [],
   nextEventFrame: 0,
+  eventsTriggered: 0,
+  maxEventsThisRace: 0,
+  lastEventText: '',
+  lastEventDisplayUntil: 0,
 };
 
 // ═══════════════════════════════════════════════
@@ -1537,21 +1559,20 @@ function updateRaceRentnerinnen() {
   // Reset event boosts
   state.raceRentnerinnen.forEach(rd => { rd.eventBoost = 1.0; });
 
-  // Trigger new event if scheduled
-  if (state.frameCount >= state.nextEventFrame) {
+  // Trigger new event if scheduled and budget remains
+  if (state.frameCount >= state.nextEventFrame && state.eventsTriggered < state.maxEventsThisRace) {
     const notFinished = state.raceRentnerinnen.filter(d => !d.finished);
     if (notFinished.length > 0) {
       const pool = Math.random() < 0.5 ? RACE_EVENTS.positive : RACE_EVENTS.negative;
       const ev = pool[Math.floor(Math.random() * pool.length)];
       const target = notFinished[Math.floor(Math.random() * notFinished.length)];
-      state.activeEvents.push({
-        dogIndex: target.id,
-        text: ev.text.replace('{name}', target.name),
-        boost: ev.boost,
-        framesLeft: ev.duration,
-      });
+      const eventText = ev.text.replace('{name}', target.name);
+      state.activeEvents.push({ dogIndex: target.id, text: eventText, boost: ev.boost, framesLeft: ev.duration });
+      state.lastEventText = eventText;
+      state.lastEventDisplayUntil = state.frameCount + 300;
+      state.eventsTriggered++;
+      state.nextEventFrame = state.frameCount + 500 + Math.floor(Math.random() * 250);
     }
-    state.nextEventFrame = state.frameCount + 150 + Math.floor(Math.random() * 200);
   }
 
   // Apply and expire active events
@@ -1605,8 +1626,9 @@ function drawConfetti(h) {
 
 function initRacing() {
   document.getElementById('race-round-label').textContent = `Runde ${state.currentRound} / ${state.totalRounds}`;
-  document.getElementById('race-status').textContent = 'Los gehts!';
-  document.getElementById('race-status').classList.add('racing');
+  const statusEl = document.getElementById('race-status');
+  statusEl.textContent = 'Bereit?';
+  statusEl.classList.remove('racing');
 
   // Bet ticker
   const ticker = document.getElementById('bet-ticker');
@@ -1627,10 +1649,71 @@ function initRacing() {
   state.raceFinished = false;
   state.confetti = [];
   state.activeEvents = [];
-  state.nextEventFrame = 120 + Math.floor(Math.random() * 180);
+  state.eventsTriggered = 0;
+  state.maxEventsThisRace = state.numRentnerinnen;
+  state.nextEventFrame = 400;
+  state.lastEventText = '';
+  state.lastEventDisplayUntil = 0;
+  document.getElementById('event-log').textContent = '';
 
   if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
-  state.animFrameId = requestAnimationFrame(raceLoop);
+
+  // Draw static starting frame
+  ctx.clearRect(0, 0, w, h);
+  drawTrack(0, w, h);
+  state.raceRentnerinnen.forEach((rt, i) => {
+    const laneY = HEADER_H + i * LANE_H + LANE_H / 2 + 8;
+    drawRentnerin(START_X, laneY, state.rentnerinnen[i], 0);
+  });
+
+  // Show start overlay
+  document.getElementById('race-overlay').classList.remove('hidden');
+}
+
+function startRaceCountdown() {
+  document.getElementById('race-overlay').classList.add('hidden');
+  const cssW = parseInt(canvas.style.width);
+  const cssH = parseInt(canvas.style.height);
+  const steps = ['3', '2', '1', 'Los!'];
+  let idx = 0;
+
+  function drawStep() {
+    ctx.clearRect(0, 0, cssW, cssH);
+    drawTrack(0, cssW, cssH);
+    state.raceRentnerinnen.forEach((rt, i) => {
+      const laneY = HEADER_H + i * LANE_H + LANE_H / 2 + 8;
+      drawRentnerin(START_X, laneY, state.rentnerinnen[i], 0);
+    });
+    ctx.fillStyle = 'rgba(8,15,8,0.62)';
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    const isLos = idx === steps.length - 1;
+    const fontSize = Math.min(cssH * 0.52, 280);
+    ctx.save();
+    ctx.font = `400 ${fontSize}px 'Russo One', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isLos ? '#4a9e40' : '#ffffff';
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = isLos ? 48 : 16;
+    ctx.fillText(steps[idx], cssW / 2, cssH / 2);
+    ctx.restore();
+
+    const delay = isLos ? 650 : 820;
+    idx++;
+    if (idx < steps.length) {
+      setTimeout(drawStep, delay);
+    } else {
+      setTimeout(() => {
+        const statusEl = document.getElementById('race-status');
+        statusEl.textContent = 'Los gehts!';
+        statusEl.classList.add('racing');
+        state.animFrameId = requestAnimationFrame(raceLoop);
+      }, delay);
+    }
+  }
+
+  drawStep();
 }
 
 function raceLoop() {
@@ -1675,9 +1758,8 @@ function raceLoop() {
         transition(PHASES.RESULTS);
       }, 2500);
     } else {
-      const latest = state.activeEvents[state.activeEvents.length - 1];
       const eventLog = document.getElementById('event-log');
-      const newText = latest ? latest.text : '';
+      const newText = state.frameCount < state.lastEventDisplayUntil ? state.lastEventText : '';
       if (newText !== eventLog.textContent) {
         eventLog.classList.remove('active');
         void eventLog.offsetWidth;
@@ -1841,6 +1923,7 @@ document.getElementById('add-player-btn').addEventListener('click', addPlayer);
 document.getElementById('start-game-btn').addEventListener('click', startGame);
 document.getElementById('curtain-ready-btn').addEventListener('click', hideCurtain);
 document.getElementById('confirm-bet-btn').addEventListener('click', confirmBet);
+document.getElementById('race-start-btn').addEventListener('click', startRaceCountdown);
 document.getElementById('end-game-btn').addEventListener('click', () => transition(PHASES.LEADERBOARD));
 document.getElementById('play-again-btn').addEventListener('click', () => {
   state.players = ['Tim','Philipp','Jo','Timmy','Fabian','Luca','Niki']
