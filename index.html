@@ -44,7 +44,11 @@ body::before {
 }
 
 .screen { display: none; flex-direction: column; align-items: center; width: 100%; padding: 16px; position: relative; z-index: 1; }
-.screen.active { display: flex; }
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen.active { display: flex; animation: screenFadeIn 0.22s ease-out; }
 
 /* ─── CARDS ─── */
 .card {
@@ -351,6 +355,8 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 .mode-toggle button { flex: 1; border-radius: 6px; margin: 0; background: transparent; color: var(--muted); border: none; font-size: 0.88rem; padding: 10px 8px; min-height: 40px; font-weight: 600; transition: background 0.18s, color 0.18s; width: auto; }
 .mode-toggle button.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(74,158,64,0.3); }
 
+.setup-right { margin-top: 16px; }
+
 /* ─── LANDSCAPE TABLET (≤600px tall) ─── */
 @media (orientation: landscape) and (max-height: 600px) {
   .screen { padding: 6px; overflow-y: auto; }
@@ -376,8 +382,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   #screen-setup .card > .title-wrap     { grid-column: 1 / -1; }
   #screen-setup .card > .players-header { grid-column: 1; }
   #screen-setup .card > #player-list    { grid-column: 1; max-height: 200px; overflow-y: auto; margin-bottom: 0; }
-  #screen-setup .card > .config-row     { grid-column: 2; margin-top: 0 !important; }
-  #screen-setup .card > .field-group    { grid-column: 2; }
+  #screen-setup .card > .setup-right    { grid-column: 2; display: flex; flex-direction: column; gap: 10px; margin-top: 0; }
   #screen-setup .card > #start-game-btn { grid-column: 2; }
 
   /* Betting: wider, dogs in 2 columns */
@@ -530,10 +535,9 @@ input:focus-visible, select:focus-visible {
   #screen-setup .card > .title-wrap .gwg-logo { width: 52px !important; height: 52px !important; margin-bottom: 8px !important; }
   /* Spielerliste: linke Spalte */
   #screen-setup .card > .players-header { grid-column: 1; }
-  #screen-setup .card > #player-list    { grid-column: 1; max-height: 240px; overflow-y: auto; }
+  #screen-setup .card > #player-list    { grid-column: 1; max-height: none; overflow-y: visible; }
   /* Konfiguration: rechte Spalte */
-  #screen-setup .card > .config-row     { grid-column: 2; margin-top: 0 !important; }
-  #screen-setup .card > .field-group    { grid-column: 2; }
+  #screen-setup .card > .setup-right    { grid-column: 2; display: flex; flex-direction: column; gap: 16px; align-self: start; margin-top: 0; }
   /* Start-Button: volle Breite unten */
   #screen-setup .card > #start-game-btn { grid-column: 1 / -1; margin-top: 16px; }
 
@@ -650,31 +654,33 @@ input:focus-visible, select:focus-visible {
     </div>
     <div id="player-list"></div>
 
-    <div class="config-row" style="margin-top:16px;">
-      <div class="field-group">
-        <label>Startchips</label>
-        <input type="number" id="starting-chips" value="10" min="1" max="100">
+    <div class="setup-right">
+      <div class="config-row">
+        <div class="field-group">
+          <label>Startchips</label>
+          <input type="number" id="starting-chips" value="10" min="1" max="100">
+        </div>
+        <div class="field-group">
+          <label>Runden</label>
+          <input type="number" id="num-rounds" value="6" min="2" max="20">
+        </div>
       </div>
+
       <div class="field-group">
-        <label>Runden</label>
-        <input type="number" id="num-rounds" value="6" min="2" max="20">
+        <label>Anzahl Rentnerinnen</label>
+        <select id="num-rentnerinnen">
+          <option value="4">4 Rentnerinnen</option>
+          <option value="5" selected>5 Rentnerinnen</option>
+          <option value="6">6 Rentnerinnen</option>
+        </select>
       </div>
-    </div>
 
-    <div class="field-group">
-      <label>Anzahl Rentnerinnen</label>
-      <select id="num-rentnerinnen">
-        <option value="4">4 Rentnerinnen</option>
-        <option value="5" selected>5 Rentnerinnen</option>
-        <option value="6">6 Rentnerinnen</option>
-      </select>
-    </div>
-
-    <div class="field-group">
-      <label>Spielmodus</label>
-      <div class="mode-toggle" id="mode-toggle">
-        <button type="button" class="active" data-mode="odds">Mit Quoten ⭐</button>
-        <button type="button" data-mode="no-odds">Ohne Quoten 🎲</button>
+      <div class="field-group">
+        <label>Spielmodus</label>
+        <div class="mode-toggle" id="mode-toggle">
+          <button type="button" class="active" data-mode="odds">Mit Quoten ⭐</button>
+          <button type="button" data-mode="no-odds">Ohne Quoten 🎲</button>
+        </div>
       </div>
     </div>
 
@@ -1133,6 +1139,58 @@ let dpr = 1;
 let LANE_H = 90;
 let HEADER_H = 40;
 const TRACK_LENGTH = 2200;
+
+let cachedCssW = 0, cachedCssH = 0;
+let eventLogEl;
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playStartHorn() {
+  const ac = getAudio();
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.connect(gain); gain.connect(ac.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(180, ac.currentTime);
+  osc.frequency.linearRampToValueAtTime(440, ac.currentTime + 0.35);
+  gain.gain.setValueAtTime(0.25, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.65);
+  osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.65);
+}
+
+function playFinishFanfare() {
+  const ac = getAudio();
+  [523.25, 659.25, 783.99].forEach((freq, i) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'triangle';
+    const t = ac.currentTime + i * 0.1;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+    osc.start(t); osc.stop(t + 0.9);
+  });
+}
+
+function playEventSound(positive) {
+  const ac = getAudio();
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.connect(gain); gain.connect(ac.destination);
+  osc.type = 'sine';
+  const t = ac.currentTime;
+  osc.frequency.setValueAtTime(positive ? 660 : 440, t);
+  osc.frequency.linearRampToValueAtTime(positive ? 880 : 220, t + 0.18);
+  gain.gain.setValueAtTime(0.12, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  osc.start(t); osc.stop(t + 0.28);
+}
 const START_X      = 100;
 const FINISH_VX    = 2100;
 
@@ -1166,6 +1224,7 @@ function setupCanvas() {
   canvas.height = cssH * dpr;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
+  cachedCssW = cssW; cachedCssH = cssH;
   return { w: cssW, h: cssH };
 }
 
@@ -1563,7 +1622,8 @@ function updateRaceRentnerinnen() {
   if (state.frameCount >= state.nextEventFrame && state.eventsTriggered < state.maxEventsThisRace) {
     const notFinished = state.raceRentnerinnen.filter(d => !d.finished);
     if (notFinished.length > 0) {
-      const pool = Math.random() < 0.5 ? RACE_EVENTS.positive : RACE_EVENTS.negative;
+      const isPositiveEvent = Math.random() < 0.5;
+      const pool = isPositiveEvent ? RACE_EVENTS.positive : RACE_EVENTS.negative;
       const ev = pool[Math.floor(Math.random() * pool.length)];
       const target = notFinished[Math.floor(Math.random() * notFinished.length)];
       const eventText = ev.text.replace('{name}', target.name);
@@ -1571,6 +1631,7 @@ function updateRaceRentnerinnen() {
       state.lastEventText = eventText;
       state.lastEventDisplayUntil = state.frameCount + 300;
       state.eventsTriggered++;
+      playEventSound(isPositiveEvent);
       state.nextEventFrame = state.frameCount + 500 + Math.floor(Math.random() * 250);
     }
   }
@@ -1654,7 +1715,8 @@ function initRacing() {
   state.nextEventFrame = 400;
   state.lastEventText = '';
   state.lastEventDisplayUntil = 0;
-  document.getElementById('event-log').textContent = '';
+  eventLogEl = document.getElementById('event-log');
+  eventLogEl.textContent = '';
 
   if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
 
@@ -1672,8 +1734,8 @@ function initRacing() {
 
 function startRaceCountdown() {
   document.getElementById('race-overlay').classList.add('hidden');
-  const cssW = parseInt(canvas.style.width);
-  const cssH = parseInt(canvas.style.height);
+  const cssW = cachedCssW;
+  const cssH = cachedCssH;
   const steps = ['3', '2', '1', 'Los!'];
   let idx = 0;
 
@@ -1705,6 +1767,7 @@ function startRaceCountdown() {
       setTimeout(drawStep, delay);
     } else {
       setTimeout(() => {
+        playStartHorn();
         const statusEl = document.getElementById('race-status');
         statusEl.textContent = 'Los gehts!';
         statusEl.classList.add('racing');
@@ -1720,8 +1783,8 @@ function raceLoop() {
   state.frameCount++;
   state.legFrame = Math.floor(state.frameCount / 8) % 4;
 
-  const cssW = parseInt(canvas.style.width);
-  const cssH = parseInt(canvas.style.height);
+  const cssW = cachedCssW;
+  const cssH = cachedCssH;
 
   // Camera follows the leader
   const leadX = state.raceRentnerinnen.length
@@ -1748,23 +1811,23 @@ function raceLoop() {
     if (done) {
       state.raceFinished = true;
       state.finishOrder = [...state.raceRentnerinnen].sort((a,b) => a.finishTime - b.finishTime).map(d => d.name);
+      playFinishFanfare();
       const statusEl = document.getElementById('race-status');
       statusEl.textContent = 'Ziel!';
       statusEl.classList.remove('racing');
-      document.getElementById('event-log').textContent = '';
+      eventLogEl.textContent = '';
       spawnConfetti(cssW);
       setTimeout(() => {
         cancelAnimationFrame(state.animFrameId);
         transition(PHASES.RESULTS);
       }, 2500);
     } else {
-      const eventLog = document.getElementById('event-log');
       const newText = state.frameCount < state.lastEventDisplayUntil ? state.lastEventText : '';
-      if (newText !== eventLog.textContent) {
-        eventLog.classList.remove('active');
-        void eventLog.offsetWidth;
-        eventLog.textContent = newText;
-        if (newText) eventLog.classList.add('active');
+      if (newText !== eventLogEl.textContent) {
+        eventLogEl.classList.remove('active');
+        void eventLogEl.offsetWidth;
+        eventLogEl.textContent = newText;
+        if (newText) eventLogEl.classList.add('active');
       }
     }
   }
@@ -1851,12 +1914,13 @@ function initResults() {
     row.innerHTML = `
       <div class="result-left">
         <div class="result-player">${r.name}</div>
-        <div class="result-bet-info">Auf: ${r.rentnerinName || '—'} (${r.odds ? r.odds + 'x' : '—'}) · ${r.wager} Chips gesetzt</div>
+        <div class="result-bet-info">Auf: ${r.rentnerinName || '—'}${state.useOdds && r.odds ? ` (${r.odds}x)` : ''} · ${r.wager} Chips gesetzt</div>
         ${r.rebuySips ? `<div style="font-size:0.8rem;color:var(--neg);">💸 Re-Buy: ${r.rebuySips} Schlucke getrunken, ${r.rebuySips} Chips erkauft</div>` : ''}
       </div>
       <div class="result-right">
         <div class="chips-delta ${deltaClass}">${deltaStr} Chips</div>
         ${r.won ? `<div style="color:var(--green);font-size:0.85rem;font-weight:700;">Verteile ${r.chipsChange} Schlucke 🎉</div>` : ''}
+        ${!r.won && r.sips > 0 ? `<div class="sips-display">${formatSips(r.sips)}</div>` : ''}
       </div>`;
     table.appendChild(row);
   });

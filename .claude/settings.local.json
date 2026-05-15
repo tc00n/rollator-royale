@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\" -Recurse -Force | ForEach-Object { $_.FullName })",
+      "Bash(start \"\" \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\frenchie-races.html\")",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git config *)",
+      "Bash(git push *)",
+      "Bash(Copy-Item \"frenchie-races.html\" \"index.html\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh api *)",
+      "PowerShell($response = Invoke-RestMethod \"https://api.github.com/repos/anthropics/claude-code/contents/plugins/frontend-design/skills/frontend-design/SKILL.md\"; [System.Text.Encoding]::UTF8.GetString\\([System.Convert]::FromBase64String\\($response.content\\)\\))",
+      "Bash(mkdir -p \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\.claude\\\\skills\\\\frontend-design\")",
+      "Bash(ls \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\\")",
+      "Read(//d/Eigene Dateien/Dokumente/**)",
+      "Bash(Get-ChildItem \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\")",
+      "Bash(Select-Object Name)",
+      "PowerShell(git -C \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\" remote -v)",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"Frenchie|Rentner|Trinkrennen|Rentnerin\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"<script\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"strength: s,|RACE_MIN_SPEEDS|RACE_MAX_SPEEDS|ODDS_MAP|LABEL_MAP\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"STRENGTH_TIERS|FORM_HINTS|RACE_EVENTS|recalculateDynamicOdds|event-log|dog-btn-tier|dog-btn-hint|assignStrengthsForRound|nextEventFrame|activeEvents\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(git -C \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\" log --oneline -- frenchie-races.html)",
+      "PowerShell(head -5)",
+      "PowerShell(git -C \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\" rm \"frenchie-races.html\")",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"Russo One|Rubik|body::before|eventSlideIn|statusPulse|racing|portrait|focus-visible|text-overflow\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"\\\\bdog\\\\b|\\\\bdogs\\\\b|\\\\bDog\\\\b|\\\\bDogs\\\\b|\\\\bBulldog\\\\b|\\\\bbulldog\\\\b|\\\\bDOG\\\\b\" -CaseSensitive:$false | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"\\\\bdog\\\\b\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"d:\\\\Eigene Dateien\\\\Dokumente\\\\Spiel\\\\index.html\" -Pattern \"\\\\bdog\\\\b|\\\\bdogName\\\\b\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })"
+    ],
+    "additionalDirectories": [
+      "d:\\Eigene Dateien\\Dokumente\\Spiel\\.claude\\skills"
+    ]
+  }
+}
