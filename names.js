@@ -16,7 +16,7 @@ const FEMALE_NAMES = [
   'Antje','Corinna','Dagmar','Manuela','Michaela','Silvia','Vera','Martina','Katrin','Annette',
   'Cornelia','Bettina','Daniela','Gabriele','Kerstin','Regina','Ulrike','Verena','Yvonne','Astrid',
   // Modern (1990–heute)
-  'Julia','Laura','Sarah','Lena','Lea','Sophie','Hannah','Katharina','Lisa','Marie',
+  'Julia','Laura','Sarah','Lena','Lea','Hannah','Katharina','Lisa','Marie',
   'Emma','Mia','Luisa','Alina','Jana','Lara','Nele','Johanna','Franziska','Maja',
   'Paula','Charlotte','Amelie','Emilia','Leonie','Clara','Lina','Nina','Eva','Anna',
   'Luise','Greta','Ida','Martha','Klara','Frieda','Hanna','Marta','Carla','Lotte',

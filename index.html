@@ -925,9 +925,7 @@ function startGame() {
   transition(PHASES.BETTING);
 }
 
-// Pre-populate default players
-state.players = ['Tim','Philipp','Jo','Timmy','Fabian','Luca','Niki']
-  .map(n => ({ name: n, chips: 0 }));
+state.players = [];
 
 // ═══════════════════════════════════════════════
 //  BETTING
@@ -1990,8 +1988,7 @@ document.getElementById('confirm-bet-btn').addEventListener('click', confirmBet)
 document.getElementById('race-start-btn').addEventListener('click', startRaceCountdown);
 document.getElementById('end-game-btn').addEventListener('click', () => transition(PHASES.LEADERBOARD));
 document.getElementById('play-again-btn').addEventListener('click', () => {
-  state.players = ['Tim','Philipp','Jo','Timmy','Fabian','Luca','Niki']
-    .map(n => ({ name: n, chips: 0 }));
+  state.players = [];
   transition(PHASES.SETUP);
 });
 
